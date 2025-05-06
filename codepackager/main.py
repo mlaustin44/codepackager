@@ -15,8 +15,17 @@ def find_repo_root(path: Path) -> Path:
     except Exception:
         return path.resolve()
 
-def collect_source_files(root: Path) -> list[Path]:
-    return sorted([p for p in root.rglob("*") if p.suffix in SUPPORTED_EXTENSIONS and p.is_file()])
+def should_exclude(path: Path, exclusions: list[Path]) -> bool:
+    for excl in exclusions:
+        if excl in path.parents or path == excl:
+            return True
+    return False
+
+def collect_source_files(root: Path, exclusions: list[Path]) -> list[Path]:
+    return sorted([
+        p for p in root.rglob("*")
+        if p.suffix in SUPPORTED_EXTENSIONS and p.is_file() and not should_exclude(p, exclusions)
+    ])
 
 def write_combined_file(files: list[Path], root: Path, output_path: Path):
     with open(output_path, "w", encoding="utf-8") as out:
@@ -38,6 +47,12 @@ def main():
         action="store_true",
         help="Only include files from the current directory and subdirectories (not the entire Git repo).",
     )
+    parser.add_argument(
+        "--exclude",
+        nargs="*",
+        default=[],
+        help="Paths to exclude (relative or absolute). Can be files or directories.",
+    )
     args = parser.parse_args()
 
     start_path = Path.cwd()
@@ -45,7 +60,9 @@ def main():
     repo_name = root.name
     output_file = OUTPUT_DIR / f"{repo_name}.llm.txt"
 
-    files = collect_source_files(root)
+    exclusions = [Path(e).resolve() for e in args.exclude]
+    files = collect_source_files(root, exclusions)
+
     if not files:
         print("❌ No source files found.")
         return
