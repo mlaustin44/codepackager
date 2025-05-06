@@ -1,0 +1,13 @@
+[project]
+name = "codepackager"
+version = "0.1.0"
+description = "Bundle source code into a single file for LLM input"
+authors = [{ name="Matthew Austin" }]
+dependencies = []
+
+[project.scripts]
+codepackager = "codepackager.main:main"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
